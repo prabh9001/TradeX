@@ -1,4 +1,4 @@
-# 🚀 FOURSIGHT AI - Advanced Trading Platform
+# 🚀 TradeX AI - Advanced Trading Platform
 
 ## ✨ What's New - Premium Features
 
