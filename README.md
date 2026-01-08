@@ -155,7 +155,6 @@ Body: { "ticker": "AAPL", "strategy": "buy_hold" }
 
 - [ ] Portfolio tracking with P&L
 - [ ] Stock screener with filters
-- [ ] Strategy backtesting engine
 - [ ] Price alerts system
 - [ ] Real-time WebSocket updates
 - [ ] Correlation matrix heatmap
