@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade X | Next Gen Trading Intelligence</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/mew.jpg') }}" type="image/x-icon">
+</head>
+
+<body>
+    <div class="landing-container">
+        <nav class="animate">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-chart-simple"></i>
+                </div>
+                <span>Trade X</span>
+            </div>
+            <a href="/login" class="btn-nav">Launch App</a>
+        </nav>
+
+        <section class="hero">
+            <h1 class="animate delay-1">Master the Markets with <br> Pure Intelligence</h1>
+            <p class="animate delay-2">Trade X combines advanced AI ensemble models, real-time sentiment analysis, and
+                professional-grade options Greeks to give you the ultimate edge.</p>
+            <a href="/login" class="animate delay-3 btn-main">Get Started Now <i class="fas fa-arrow-right"
+                    style="margin-left: 10px;"></i></a>
+
+        </section>
+
+        <section class="features">
+            <div class="feature-card animate delay-1">
+                <div class="feature-icon"><i class="fas fa-brain"></i></div>
+                <h3>AI Ensemble Models</h3>
+                <p>Proprietary ML models trained on 500+ days of historical data to predict next-day price movements
+                    with high confidence.</p>
+            </div>
+            <div class="feature-card animate delay-2">
+                <div class="feature-icon"><i class="fas fa-newspaper"></i></div>
+                <h3>Sentiment Engine</h3>
+                <p>Real-time analysis of global news and social trends to gauge market mood before the volatility hits.
+                </p>
+            </div>
+            <div class="feature-card animate delay-3">
+                <div class="feature-icon"><i class="fas fa-chart-pie"></i></div>
+                <h3>Options Pro Chain</h3>
+                <p>Real-time Greeks (Delta, Theta, Gamma, Vega) and PCR metrics for SENSEX, NIFTY and major Indian
+                    indices.</p>
+            </div>
+        </section>
+
+        <footer style="text-align: center; padding: 4rem 0; color: var(--text-secondary); font-size: 0.9rem;"
+            class="animate delay-3">
+            <p>&copy; 2026 Trade X AI Trading Platform. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Simple scroll reveal
+        window.addEventListener('scroll', () => {
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach(card => {
+                const cardTop = card.getBoundingClientRect().top;
+                if (cardTop < window.innerHeight - 100) {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
