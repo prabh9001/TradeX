@@ -107,8 +107,7 @@ class AdvancedAIEngine:
             # 2. Try nselib (Very reliable for India)
             try:
                 from nselib import capital_market
-                # For specific stock, we can't easily get single quote via nselib without fetching heavy lists
-                # But we can try to find it in the market watch if it's a major one
+              
                 pass
             except:
                 pass
