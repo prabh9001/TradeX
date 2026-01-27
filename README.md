@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # 🚀 TRADE X - Advanced Trading Platform
+=======
+# 🚀 TradeX AI - Advanced Trading Platform
+>>>>>>> 8a136b6fb9e1307d707f09d9bd4bb5fcde0d8122
 
 ## ✨ Premium Features
 
@@ -71,6 +75,136 @@ python app.py
 ### 4. Open Browser
 Navigate to: **http://localhost:8000**
 
+<<<<<<< HEAD
+=======
+## 📖 How to Use
+
+1. **Enter Stock Symbol** - Type any ticker (AAPL, TCS, RELIANCE, etc.)
+2. **Click Analyze** - AI will process the data
+3. **Review Results** - See predictions, indicators, sentiment, and risk
+4. **Make Decisions** - Use the BUY/SELL/HOLD signal
+
+## 🎨 Design Highlights
+
+### Color Palette
+- **Primary Blue**: `#3b82f6` - Actions & highlights
+- **Success Green**: `#10b981` - Positive metrics
+- **Danger Red**: `#ef4444` - Negative metrics
+- **Warning Gold**: `#f59e0b` - Neutral/caution
+- **Info Cyan**: `#06b6d4` - Information
+
+### Typography
+- **Primary Font**: Inter - Clean, modern sans-serif
+- **Monospace**: JetBrains Mono - For numbers and data
+
+### Effects
+- **Glassmorphism** - Frosted glass effect on cards
+- **Backdrop Blur** - 20px blur for depth
+- **Smooth Transitions** - 0.3s ease on all interactions
+- **Hover Effects** - Cards lift on hover
+- **Gradient Accents** - Vibrant gradient overlays
+
+## 🔧 Technical Stack
+
+### Backend
+- **Flask 3.0** - Modern Python web framework
+- **TensorFlow 2.15** - LSTM neural networks
+- **scikit-learn** - Ensemble ML models
+- **yfinance** - Real market data
+- **TextBlob** - NLP sentiment analysis
+
+### Frontend
+- **Pure HTML/CSS/JS** - No framework overhead
+- **Plotly.js** - Interactive charts
+- **Chart.js** - Additional visualizations
+- **Font Awesome** - Professional icons
+
+## 📊 API Endpoints
+
+### Analysis
+```
+POST /api/analyze
+Body: { "ticker": "AAPL" }
+```
+
+### Portfolio (Coming Soon)
+```
+GET /api/portfolio
+POST /api/portfolio
+```
+
+### Screener (Coming Soon)
+```
+POST /api/screener
+Body: { "criteria": {...} }
+```
+
+### Backtest (Coming Soon)
+```
+POST /api/backtest
+Body: { "ticker": "AAPL", "strategy": "buy_hold" }
+```
+
+## 🎯 Key Improvements Over Previous Version
+
+| Feature | Before | After |
+|---------|--------|-------|
+| **Design** | Basic white theme | Premium glassmorphism dark theme |
+| **AI Model** | Single Random Forest | Ensemble (RF + GB) + LSTM support |
+| **Indicators** | 3 basic | 30+ comprehensive |
+| **Sentiment** | Simple average | Advanced NLP with news feed |
+| **Risk Metrics** | None | Volatility, Sharpe, Drawdown, VaR |
+| **Charts** | Basic candlestick | Professional multi-timeframe |
+| **Signals** | Basic BUY/SELL | Smart signals with strength |
+| **UX** | Static | Animated, interactive, responsive |
+
+## 🌟 What Makes This Premium
+
+1. **Visual Excellence** - Every pixel matters, professional design
+2. **Advanced AI** - Not just basic ML, but deep learning ready
+3. **Comprehensive Data** - 30+ indicators vs 3 before
+4. **Risk Analysis** - Professional-grade risk metrics
+5. **Smart Signals** - Hybrid approach combining multiple factors
+6. **News Integration** - Real sentiment from actual news
+7. **Smooth UX** - Animations and transitions everywhere
+8. **Scalable** - Ready for portfolio, screener, backtesting
+
+## 🔮 Future Enhancements
+
+- [ ] Portfolio tracking with P&L
+- [ ] Stock screener with filters
+- [ ] Price alerts system
+- [ ] Real-time WebSocket updates
+- [ ] Correlation matrix heatmap
+- [ ] Options analysis
+- [ ] Sector analysis
+- [ ] Watchlist management
+- [ ] Export reports (PDF)
+
+## 💡 Tips
+
+- **Indian Stocks**: Add `.NS` for NSE or `.BO` for BSE (e.g., `TCS.NS`)
+- **US Stocks**: Use direct ticker (e.g., `AAPL`, `GOOGL`)
+- **Demo Mode**: If API fails, realistic demo data is shown
+- **Accuracy**: Higher confidence = more reliable prediction
+
+## 🎨 Customization
+
+Edit `static/css/style.css` to customize:
+- Colors (`:root` variables)
+- Spacing
+- Border radius
+- Animations
+- Fonts
+
+## 📝 Notes
+
+- TensorFlow is optional - works with ensemble methods if TF not available
+- All data is fetched in real-time from Yahoo Finance
+- Sentiment analysis uses actual news headlines
+- Risk metrics calculated from historical returns
+
+>>>>>>> 8a136b6fb9e1307d707f09d9bd4bb5fcde0d8122
 ---
 
 ## 📖 How to Use
