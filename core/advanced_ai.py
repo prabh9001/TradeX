@@ -817,9 +817,9 @@ class AdvancedAIEngine:
             'var_95': round(var_95 * 100, 2)
         }
 
-    def get_upstox_option_chain(self, instrument_key):
+    def get_upstox_option_chain(self, instrument_key, target_expiry=None):
         """Fetches option chain data with Greeks from Upstox"""
-        log_file = "c:/Users/WAHEGURU JI/Desktop/New folder (6)/upstox_debug.log"
+        log_file = os.path.join(os.getcwd(), "upstox_debug.log")
         
         # Helper to reload token if missing or invalid
         def reload_token():
@@ -834,6 +834,12 @@ class AdvancedAIEngine:
                 'Accept': 'application/json'
             }
             return self.upstox_token
+
+        def clean_num(val):
+            try:
+                return float(val) if val is not None else 0.0
+            except: 
+                return 0.0
 
         if not self.upstox_token:
             reload_token()
@@ -873,13 +879,21 @@ class AdvancedAIEngine:
                 with open(log_file, "a") as f: f.write(f"  [ERROR] No contract data found for {instrument_key}\n")
                 return None
                 
-            # Extract unique expiry dates and pick the nearest one
-            expiries = sorted(list(set([item['expiry'] for item in exp_data['data']])))
-            if not expiries:
-                with open(log_file, "a") as f: f.write(f"  [ERROR] No expiry dates found for {instrument_key}\n")
-                return None
-            nearest_expiry = expiries[0]
-            with open(log_file, "a") as f: f.write(f"  [OK] Nearest Expiry: {nearest_expiry}\n")
+            # Extract unique expiry dates and pick the nearest one that is today or in the future
+            all_expiries = sorted(list(set([item['expiry'] for item in exp_data['data']])))
+            today_str = datetime.now().strftime('%Y-%m-%d')
+            future_expiries = [e for e in all_expiries if e >= today_str]
+            
+            if not future_expiries:
+                with open(log_file, "a") as f: f.write(f"  [ERROR] No current/future expiry dates found for {instrument_key}.\n")
+                if not all_expiries: return None
+                nearest_expiry = all_expiries[0]
+                future_expiries = [nearest_expiry]
+            else:
+                # If a specific expiry was requested, use it; otherwise use the nearest
+                nearest_expiry = target_expiry if (target_expiry and target_expiry in future_expiries) else future_expiries[0]
+                
+            with open(log_file, "a") as f: f.write(f"  [OK] Using Expiry: {nearest_expiry}\n")
             
             # 2. Fetch the chain
             chain_url = f"{self.base_url}/option/chain"
@@ -930,17 +944,13 @@ class AdvancedAIEngine:
                 for op in selected_options:
                     ce_data = op.get('call_options', {})
                     pe_data = op.get('put_options', {})
-                    ce_oi = ce_data.get('market_data', {}).get('oi', 0)
-                    pe_oi = pe_data.get('market_data', {}).get('oi', 0)
+                    ce_oi = clean_num(ce_data.get('market_data', {}).get('oi', 0))
+                    pe_oi = clean_num(pe_data.get('market_data', {}).get('oi', 0))
                     
                     strike = op['strike_price']
                     ce_greeks = ce_data.get('option_greeks', {})
                     pe_greeks = pe_data.get('option_greeks', {})
                     
-                    def clean_num(val):
-                        try:
-                            return float(val) if val is not None else 0.0
-                        except: return 0.0
 
                     chain_summary.append({
                         'strike': strike,
@@ -965,6 +975,7 @@ class AdvancedAIEngine:
                 
                 return {
                     'expiry': nearest_expiry,
+                    'all_expiries': future_expiries,
                     'total_ce_oi': total_ce_oi,
                     'total_pe_oi': total_pe_oi,
                     'pcr': round(pcr, 4),
@@ -984,7 +995,7 @@ class AdvancedAIEngine:
     def comprehensive_analysis(self, ticker, timeframe='1M'):
         """Main function for complete AI analysis - REAL DATA ONLY"""
         print(f"\n{'='*60}")
-        print(f"FOURSIGHT AI - ADVANCED ANALYSIS: {ticker} ({timeframe})")
+        print(f"TRADE X - ADVANCED ANALYSIS: {ticker} ({timeframe})")
         print(f"{'='*60}\n")
         
         result = self.fetch_data(ticker, timeframe=timeframe)

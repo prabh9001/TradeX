@@ -899,6 +899,7 @@ def get_option_chain():
     from nsepython import nse_optionchain_scrapper
     try:
         symbol = request.args.get('symbol', 'NIFTY').upper()
+        target_expiry = request.args.get('expiry') # Optional specific expiry request
         
         # --- NEW: EXCEL SYNC (Book1.xlsx) ---
         excel_data = []
@@ -967,12 +968,14 @@ def get_option_chain():
 
                 excel_summary = {
                     'source': 'Excel (Book1.xlsx)',
-                    'chain_name': chain_name,
+                    'chain_name': chain_name if chain_name != 'N/A' else symbol,
                     'expiry': str(nearest_expiry).split(' ')[0],
                     'total_rows': len(excel_data),
                     'timestamp': datetime.datetime.now().strftime('%H:%M:%S'),
                     'most_active_strike': float(most_active.get('strikePrice', 0)) if most_active is not None else 0,
-                    'least_active_strike': float(least_active.get('strikePrice', 0)) if least_active is not None else 0
+                    'least_active_strike': float(least_active.get('strikePrice', 0)) if least_active is not None else 0,
+                    'pcr': '--',
+                    'underlying_value': '--'
                 }
             except Exception as ex_err:
                 print(f"Excel read error: {ex_err}")
@@ -990,7 +993,7 @@ def get_option_chain():
 
         if u_key:
             try:
-                upstox_insights = ai_engine.get_upstox_option_chain(u_key)
+                upstox_insights = ai_engine.get_upstox_option_chain(u_key, target_expiry=target_expiry)
             except Exception as ue:
                 print(f"Upstox fetch error: {ue}")
 
@@ -1001,8 +1004,35 @@ def get_option_chain():
             except Exception as ne:
                 print(f"NSE fetch failed: {ne}")
 
-        summary = excel_summary or {}
-        processed_data = excel_data or []
+        if upstox_insights:
+            summary = {
+                'chain_name': symbol,
+                'total_ce_oi': upstox_insights.get('total_ce_oi', 0),
+                'total_pe_oi': upstox_insights.get('total_pe_oi', 0),
+                'pcr': upstox_insights.get('pcr', '--'),
+                'underlying_value': upstox_insights.get('underlying_price', "See Header"),
+                'expiry': upstox_insights.get('expiry', '--'),
+                'timestamp': "Live (Upstox)"
+            }
+            processed_data = []
+            for item in upstox_insights.get('items', []):
+                processed_data.append({
+                    'strikePrice': item.get('strike', 0),
+                    'expiry': upstox_insights.get('expiry', 'N/A'),
+                    'CE': {
+                        'openInterest': item.get('ce_oi') or 0,
+                        'lastPrice': item.get('ce_ltp') or 0,
+                        'movement': 'N/A'
+                    },
+                    'PE': {
+                        'openInterest': item.get('pe_oi') or 0,
+                        'lastPrice': item.get('pe_ltp') or 0,
+                        'movement': 'N/A'
+                    }
+                })
+        else:
+            summary = excel_summary or {}
+            processed_data = excel_data or []
 
         if not processed_data and chain_data:
             try:
@@ -1017,28 +1047,6 @@ def get_option_chain():
             except:
                 pass
 
-        if not processed_data and upstox_insights:
-            summary = {
-                'total_ce_oi': upstox_insights.get('total_ce_oi', 0),
-                'total_pe_oi': upstox_insights.get('total_pe_oi', 0),
-                'pcr': upstox_insights.get('pcr', '--'),
-                'underlying_value': upstox_insights.get('underlying_price', "See Header"),
-                'timestamp': "Live (Upstox)"
-            }
-            for item in upstox_insights.get('items', []):
-                processed_data.append({
-                    'strikePrice': item['strike'],
-                    'CE': {
-                        'openInterest': item['ce_oi'],
-                        'lastPrice': item['ce_ltp'],
-                        'movement': 'N/A'
-                    },
-                    'PE': {
-                        'openInterest': item['pe_oi'],
-                        'lastPrice': item['pe_ltp'],
-                        'movement': 'N/A'
-                    }
-                })
 
         if not processed_data:
              return jsonify({'success': False, 'error': 'Market data currently unavailable.'})
@@ -1048,6 +1056,7 @@ def get_option_chain():
             'summary': summary,
             'upstox_insights': upstox_insights,
             'data': processed_data,
+            'all_expiries': upstox_insights.get('all_expiries', []) if upstox_insights else [],
             'excel_sync': (excel_summary is not None)
         })
 
@@ -1168,7 +1177,7 @@ def internal_error(error):
 
 if __name__ == '__main__':
     print("\n" + "="*60)
-    print("FOURSIGHT AI - ADVANCED TRADING PLATFORM")
+    print("TRADE X - ADVANCED TRADING PLATFORM")
     print("="*60)
     print("Server starting on http://localhost:8000")
     print("AI Engine: READY")

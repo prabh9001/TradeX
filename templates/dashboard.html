@@ -291,6 +291,10 @@
                         <option value="FINNIFTY">FIN NIFTY</option>
                         <option value="SENSEX">SENSEX</option>
                     </select>
+                    <select id="optionExpiry" class="search-input" style="width: 150px; padding: 0.5rem;"
+                        onchange="fetchOptionChain()">
+                        <option value="">Nearest Expiry</option>
+                    </select>
                     <button class="btn btn-primary" onclick="fetchOptionChain()">
                         <i class="fas fa-sync"></i> REFRESH
                     </button>
@@ -331,6 +335,20 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- OPTION OI CHART -->
+            <div class="glass-card col-span-12" id="optionChartCard" style="display: none; margin-bottom: 2rem;">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-bar"></i> Open Interest (OI) Distribution</h3>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                        <span style="color: rgba(16, 185, 129, 0.8);">■</span> CALL OI
+                        <span style="color: rgba(239, 68, 68, 0.8); margin-left: 10px;">■</span> PUT OI
+                    </div>
+                </div>
+                <div style="height: 350px; width: 100%; padding: 1.5rem; position: relative;">
+                    <canvas id="oiChart"></canvas>
                 </div>
             </div>
 
@@ -1308,12 +1326,16 @@
 
         async function fetchOptionChain() {
             const symbol = document.getElementById('optionSymbol').value;
+            const expirySelect = document.getElementById('optionExpiry');
+            const targetExpiry = expirySelect.value;
             const greeksBody = document.getElementById('upstoxGreeksBody');
             const fullBody = document.getElementById('fullChainBody');
             const optCard = document.getElementById('optionInsightsCard');
             const optError = document.getElementById('optError');
             const mostActiveEl = document.getElementById('mostActiveStrike');
             const leastActiveEl = document.getElementById('leastActiveStrike');
+            const oiChartCard = document.getElementById('optionChartCard');
+            let oiChartInstance = null;
 
             if (document.getElementById('optIndexName')) {
                 document.getElementById('optIndexName').textContent = symbol;
@@ -1324,7 +1346,8 @@
             optError.style.display = 'none';
 
             try {
-                const response = await fetch(`/api/option-chain?symbol=${symbol}`);
+                const url = targetExpiry ? `/api/option-chain?symbol=${symbol}&expiry=${targetExpiry}` : `/api/option-chain?symbol=${symbol}`;
+                const response = await fetch(url);
                 const result = await response.json();
 
                 if (result.success) {
@@ -1339,8 +1362,8 @@
                         }
 
                         // Update summary indicators
-                        if (document.getElementById('underlyingValue')) document.getElementById('underlyingValue').textContent = result.summary.underlying_value || '--';
-                        if (document.getElementById('upstoxPcr')) document.getElementById('upstoxPcr').textContent = result.summary.pcr || '--';
+                        if (document.getElementById('underlyingValue')) document.getElementById('underlyingValue').textContent = (result.summary.underlying_value !== undefined && result.summary.underlying_value !== null) ? result.summary.underlying_value : '--';
+                        if (document.getElementById('upstoxPcr')) document.getElementById('upstoxPcr').textContent = (result.summary.pcr !== undefined && result.summary.pcr !== null) ? result.summary.pcr : '--';
                         if (document.getElementById('upstoxExpiry')) document.getElementById('upstoxExpiry').textContent = result.summary.expiry || '--';
                     }
 
@@ -1381,15 +1404,86 @@
                         return `
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s; background: ${rowBg};" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='${rowBg}'">
                             <td style="padding: 0.75rem; color: ${ceColor}; font-weight: 600;">${ceMv}</td>
-                            <td style="padding: 0.75rem; color: #fff;">${item.CE.openInterest.toLocaleString()}</td>
-                            <td style="padding: 0.75rem; color: var(--accent-success); font-family: monospace; font-weight: 700;">₹${item.CE.lastPrice}</td>
+                            <td style="padding: 0.75rem; color: #fff;">${(item.CE.openInterest || 0).toLocaleString()}</td>
+                            <td style="padding: 0.75rem; color: var(--accent-success); font-family: monospace; font-weight: 700;">₹${item.CE.lastPrice || 0}</td>
                             <td style="padding: 0.75rem; font-weight: 800; background: rgba(255,255,255,0.03); color: var(--accent-primary);">${item.strikePrice}</td>
-                            <td style="padding: 0.75rem; font-weight: 600; color: var(--text-secondary);">${item.expiry}</td>
-                            <td style="padding: 0.75rem; color: var(--accent-danger); font-family: monospace; font-weight: 700;">₹${item.PE.lastPrice}</td>
-                            <td style="padding: 0.75rem; color: #fff;">${item.PE.openInterest.toLocaleString()}</td>
+                            <td style="padding: 0.75rem; font-weight: 600; color: var(--text-secondary);">${item.expiry || 'N/A'}</td>
+                            <td style="padding: 0.75rem; color: var(--accent-danger); font-family: monospace; font-weight: 700;">₹${item.PE.lastPrice || 0}</td>
+                            <td style="padding: 0.75rem; color: #fff;">${(item.PE.openInterest || 0).toLocaleString()}</td>
                             <td style="padding: 0.75rem; color: ${peColor}; font-weight: 600;">${peMv}</td>
                         </tr>
                     `}).join('');
+
+                    // 3. Render OI Chart
+                    if (oiChartCard && result.data && result.data.length > 0) {
+                        oiChartCard.style.display = 'block';
+                        const ctx = document.getElementById('oiChart').getContext('2d');
+
+                        // Clear existing chart if any
+                        if (window.myOIChart) window.myOIChart.destroy();
+
+                        const chartData = result.data.slice(0, 30); // Use a subset for clarity
+                        const labels = chartData.map(item => item.strikePrice);
+                        const ceOI = chartData.map(item => item.CE.openInterest);
+                        const peOI = chartData.map(item => item.PE.openInterest);
+
+                        window.myOIChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [
+                                    {
+                                        label: 'Call OI',
+                                        data: ceOI,
+                                        backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                                        borderColor: '#10b981',
+                                        borderWidth: 1
+                                    },
+                                    {
+                                        label: 'Put OI',
+                                        data: peOI,
+                                        backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                                        borderColor: '#ef4444',
+                                        borderWidth: 1
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: { mode: 'index', intersect: false }
+                                },
+                                scales: {
+                                    x: {
+                                        grid: { color: 'rgba(255,255,255,0.05)' },
+                                        ticks: { color: 'var(--text-secondary)', font: { size: 10 } }
+                                    },
+                                    y: {
+                                        grid: { color: 'rgba(255,255,255,0.05)' },
+                                        ticks: { color: 'var(--text-secondary)', font: { size: 10 } }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // 4. Update Expiry Dropdown if not already set or if symbol changed
+                    if (result.all_expiries && result.all_expiries.length > 0) {
+                        const currentValue = expirySelect.value;
+                        // Only rebuild if the dropdown only has the default option or if we forced a refresh
+                        if (expirySelect.options.length <= 1 || result.all_expiries.indexOf(currentValue) === -1) {
+                            expirySelect.innerHTML = '<option value="">Nearest Expiry</option>';
+                            result.all_expiries.forEach(exp => {
+                                const opt = document.createElement('option');
+                                opt.value = exp;
+                                opt.textContent = exp;
+                                if (exp === result.summary.expiry) opt.selected = true;
+                                expirySelect.appendChild(opt);
+                            });
+                        }
+                    }
 
                 } else {
                     optError.textContent = result.error || "Failed to load option chain data.";
