@@ -8,10 +8,6 @@ import yfinance as yf
 import upstox_client
 from upstox_client.rest import ApiException
 from dotenv import load_dotenv
-import logging
-logging.basicConfig(filename='foursight.log', level=logging.DEBUG, 
-                    format='%(asctime)s %(levelname)s %(message)s')
-logging.info("Advanced AI Engine Initialized")
 from datetime import datetime, timedelta
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.preprocessing import MinMaxScaler
@@ -22,24 +18,10 @@ import json
 
 warnings.filterwarnings("ignore")
 
-# ============================================================================
-# NSELIB CONFIGURATION (Indian Stocks & Indices - FREE)
-# ============================================================================
-# nselib provides free access to NSE data
-
-print(f"[OK] nselib initialized")
-print(f"     Free tier: Unlimited calls")
-print(f"     Coverage: Indian stocks & Indices")
-
-try:
-    from tensorflow import keras
-    from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import LSTM, Dense, Dropout
-    LSTM_AVAILABLE = True
-except ImportError:
-    LSTM_AVAILABLE = False
-    print("WARNING: TensorFlow not available. Using ensemble methods only.")
-
+class MockTicker:
+    def __init__(self, name=""):
+        self.name = name
+        self.news = []
 
 class AdvancedAIEngine:
     def __init__(self):
@@ -104,13 +86,6 @@ class AdvancedAIEngine:
                 except Exception as e:
                     print(f"  [!] Upstox LTP Error for {ticker}: {e}")
 
-            # 2. Try nselib (Very reliable for India)
-            try:
-                from nselib import capital_market
-              
-                pass
-            except:
-                pass
 
             # 3. Fallback: yfinance (Last resort)
             import yfinance as yf
@@ -257,11 +232,6 @@ class AdvancedAIEngine:
                 
                 logging.info(f"  [OK] Fetched {len(df)} {interval} candles")
                 
-                class MockTicker:
-                    def __init__(self, name):
-                        self.name = name
-                        self.news = []
-                
                 return df, MockTicker(ticker)
                 
         except Exception as e:
@@ -338,21 +308,8 @@ class AdvancedAIEngine:
             # Clean ticker - remove suffixes
             clean_ticker = ticker.replace('.NS', '').replace('.BO', '').replace('.BSE', '')
             
-            # Map common index symbols to nselib names
-            index_mapping = {
-                '^NSEI': 'NIFTY 50',
-                'NIFTY': 'NIFTY 50',
-                '^NSEBANK': 'NIFTY BANK',
-                'BANKNIFTY': 'NIFTY BANK',
-                'NIFTY_BANK': 'NIFTY BANK',
-                '^CNXIT': 'NIFTY IT',
-                'NIFTY_IT': 'NIFTY IT',
-                'SENSEX': 'SENSEX',
-                '^BSESN': 'SENSEX'
-            }
-            
-            if clean_ticker.upper() in index_mapping:
-                clean_ticker = index_mapping[clean_ticker.upper()]
+            if clean_ticker.upper() in self.index_mapping:
+                clean_ticker = self.index_mapping[clean_ticker.upper()]
             
             # Identify if it's an index
             indices = ['NIFTY 50', 'NIFTY BANK', 'NIFTY IT', 'SENSEX', 'NIFTY AUTO', 'NIFTY PHARMA', 'NIFTY FMCG', 'NIFTY REALTY', 'NIFTY METAL', 'NIFTY ENERGY', 'NIFTY INFRA', 'NIFTY PSE', 'NIFTY CPSE', 'NIFTY NEXT 50', 'NIFTY 100', 'NIFTY 200', 'NIFTY 500', 'NIFTY MIDCAP 50', 'NIFTY MIDCAP 100', 'NIFTY SMALLCAP 100']
@@ -487,14 +444,8 @@ class AdvancedAIEngine:
         
         stock_name = original_ticker
         
-        class MockTicker:
-            def __init__(self, ticker_name=""):
-                self.news = []
-                self.name = ticker_name
-
         # 1. Try Upstox for Indian Stocks first (if token provided)
         if self.upstox_token:
-            # Note: Upstox fetcher needs standard symbol, but we'll try it
             df, ticker_obj = self.fetch_data_upstox(ticker.split('.')[0], timeframe=timeframe)
             if df is not None and len(df) >= 5:
                 print("  Success: Using Upstox Data")
@@ -654,37 +605,6 @@ class AdvancedAIEngine:
         rs = gain / loss
         return 100 - (100 / (1 + rs))
     
-    def build_lstm_model(self, input_shape):
-        """Build LSTM neural network for time series prediction"""
-        model = Sequential([
-            LSTM(128, return_sequences=True, input_shape=input_shape),
-            Dropout(0.2),
-            LSTM(64, return_sequences=True),
-            Dropout(0.2),
-            LSTM(32, return_sequences=False),
-            Dropout(0.2),
-            Dense(16, activation='relu'),
-            Dense(1, activation='sigmoid')
-        ])
-        
-        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-        return model
-    
-    def prepare_lstm_data(self, df, lookback=60):
-        """Prepare data for LSTM training"""
-        features = ['Close', 'Volume', 'RSI', 'MACD', 'BB_Width', 'Stoch_K', 'ATR']
-        
-        available_features = [f for f in features if f in df.columns]
-        data = df[available_features].values
-        
-        scaled_data = self.scaler.fit_transform(data)
-        
-        X, y = [], []
-        for i in range(lookback, len(scaled_data) - 1):
-            X.append(scaled_data[i-lookback:i])
-            y.append(df['Target'].iloc[i])
-        
-        return np.array(X), np.array(y)
     
     def ensemble_prediction(self, df):
         """Use ensemble of models for robust predictions"""
@@ -987,8 +907,6 @@ class AdvancedAIEngine:
         except Exception as e:
             with open(log_file, "a") as f: f.write(f"  [CRITICAL] Exception for {instrument_key}: {str(e)}\n")
             
-        return None
-
         return None
     
     def comprehensive_analysis(self, ticker, timeframe='1M'):

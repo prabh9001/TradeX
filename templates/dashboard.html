@@ -41,7 +41,6 @@
                     <li><a href="#" class="nav-link" onclick="showView('portfolio')">Portfolio</a></li>
                     <li><a href="#" class="nav-link" onclick="showView('screener')">Screener</a></li>
                     <li><a href="#" class="nav-link" onclick="showView('backtest')">Backtest</a></li>
-                    <li><a href="#" class="nav-link" onclick="showView('alerts')">Alerts</a></li>
                 </ul>
             </nav>
 
@@ -373,12 +372,18 @@
                         <thead style="position: sticky; top: 0; background: var(--bg-card); z-index: 10;">
                             <tr style="color: var(--text-secondary); border-bottom: 2px solid var(--border-color);">
                                 <th style="padding: 0.75rem; background: rgba(239, 68, 68, 0.05);">CE Movement</th>
-                                <th style="padding: 0.75rem; background: rgba(239, 68, 68, 0.05);">CE OI</th>
+                                <th
+                                    style="padding: 0.75rem; background: rgba(239, 68, 68, 0.08); color: var(--text-primary); font-weight: 800; border-left: 1px solid var(--border-color);">
+                                    CE OI
+                                </th>
                                 <th style="padding: 0.75rem; background: rgba(239, 68, 68, 0.05);">CE Price</th>
                                 <th style="padding: 0.75rem; width: 100px; background: var(--bg-glass);">STRIKE</th>
                                 <th style="padding: 0.75rem; width: 100px; background: var(--bg-glass);">DATE</th>
                                 <th style="padding: 0.75rem; background: rgba(16, 185, 129, 0.05);">PE Price</th>
-                                <th style="padding: 0.75rem; background: rgba(16, 185, 129, 0.05);">PE OI</th>
+                                <th
+                                    style="padding: 0.75rem; background: rgba(16, 185, 129, 0.08); color: var(--text-primary); font-weight: 800; border-right: 1px solid var(--border-color);">
+                                    PE OI
+                                </th>
                                 <th style="padding: 0.75rem; background: rgba(16, 185, 129, 0.05);">PE Movement</th>
                             </tr>
                         </thead>
@@ -594,86 +599,6 @@
         </div>
     </div>
 
-    <!-- ALERTS VIEW -->
-    <div class="main-container" id="alertsView" style="display: none; opacity: 1;">
-        <div class="glass-card col-span-12" style="margin-bottom: 2rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <div>
-                    <h1 style="font-size: 2rem; font-weight: 900;"><i class="fas fa-bell"></i> Market Sentinels</h1>
-                    <p style="color: var(--text-secondary);">AI-Powered Price & Technical Alerts</p>
-                </div>
-                <button class="btn btn-primary" onclick="toggleAlertForm()">
-                    <i class="fas fa-plus-circle"></i> CREATE NEW ALERT
-                </button>
-            </div>
-
-            <!-- Create Alert Form (Hidden by default) -->
-            <div id="alertForm"
-                style="display: none; background: var(--bg-glass); padding: 1.5rem; border-radius: var(--radius-lg); margin-top: 1rem; border: 1px solid var(--accent-primary);">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-                    <div>
-                        <label
-                            style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Ticker</label>
-                        <input type="text" id="alertTicker" class="search-input" placeholder="e.g. RELIANCE"
-                            style="padding: 0.75rem; width: 100%;">
-                    </div>
-                    <div>
-                        <label
-                            style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Alert
-                            Type</label>
-                        <select id="alertType" class="search-input" style="padding: 0.75rem; width: 100%;"
-                            onchange="updateAlertOptions()">
-                            <option value="PRICE_ABOVE">Price Crosses Above</option>
-                            <option value="PRICE_BELOW">Price Crosses Below</option>
-                            <option value="PCT_CHANGE">Rapid Move (% Change)</option>
-                            <option value="RSI_OVERSOLD">RSI Oversold (<30)< /option>
-                            <option value="RSI_OVERBOUGHT">RSI Overbought (>70)</option>
-                            <option value="SENTIMENT_FLIP">AI Sentiment Flip</option>
-                        </select>
-                    </div>
-                    <div id="alertValueContainer">
-                        <label id="alertValueLabel"
-                            style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Target
-                            Value</label>
-                        <input type="number" id="alertValue" class="search-input" placeholder="Value"
-                            style="padding: 0.75rem; width: 100%;">
-                    </div>
-                    <div style="display: flex; align-items: flex-end; gap: 1rem;">
-                        <button class="btn btn-primary" style="flex: 1;" onclick="saveAlert()">SAVE SENTINEL</button>
-                        <button class="btn" style="background: var(--bg-glass); color: var(--text-primary);"
-                            onclick="toggleAlertForm()">CANCEL</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-grid">
-            <!-- Active Sentinels -->
-            <div class="glass-card col-span-8">
-                <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-shield-alt"></i> Active Sentinels</h3>
-                </div>
-                <div id="activeAlertsList"
-                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
-                    <!-- Alert Cards Injected Here -->
-                    <p style="color: var(--text-secondary); text-align: center; padding: 2rem; grid-column: 1/-1;">No
-                        active sentinels. Set one up to monitor the market.</p>
-                </div>
-            </div>
-
-            <!-- Sentinel Mission Log -->
-            <div class="glass-card col-span-4">
-                <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-history"></i> Mission Log</h3>
-                </div>
-                <div id="alertHistory"
-                    style="max-height: 500px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem;">
-                    <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No triggers logged yet.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script>
         let currentTicker = '';
@@ -1044,7 +969,6 @@
                 document.getElementById('screenerView').style.display = 'none';
                 document.getElementById('portfolioView').style.display = 'none';
                 document.getElementById('backtestView').style.display = 'none';
-                document.getElementById('alertsView').style.display = 'none';
                 setTimeout(() => document.getElementById('mainDashboard').style.opacity = '1', 50);
             } else if (viewName === 'screener') {
                 document.getElementById('globalSearch').style.display = 'none';
@@ -1052,7 +976,6 @@
                 document.getElementById('screenerView').style.display = 'block';
                 document.getElementById('portfolioView').style.display = 'none';
                 document.getElementById('backtestView').style.display = 'none';
-                document.getElementById('alertsView').style.display = 'none';
                 fetchOptionChain();
                 // Set auto-refresh every 30 seconds for live Excel sync
                 optionChainAutoRefresh = setInterval(fetchOptionChain, 30000);
@@ -1062,7 +985,6 @@
                 document.getElementById('screenerView').style.display = 'none';
                 document.getElementById('portfolioView').style.display = 'block';
                 document.getElementById('backtestView').style.display = 'none';
-                document.getElementById('alertsView').style.display = 'none';
                 fetchPortfolio();
             } else if (viewName === 'backtest') {
                 document.getElementById('globalSearch').style.display = 'none';
@@ -1070,15 +992,6 @@
                 document.getElementById('screenerView').style.display = 'none';
                 document.getElementById('portfolioView').style.display = 'none';
                 document.getElementById('backtestView').style.display = 'block';
-                document.getElementById('alertsView').style.display = 'none';
-            } else if (viewName === 'alerts') {
-                document.getElementById('globalSearch').style.display = 'none';
-                document.getElementById('mainDashboard').style.display = 'none';
-                document.getElementById('screenerView').style.display = 'none';
-                document.getElementById('portfolioView').style.display = 'none';
-                document.getElementById('backtestView').style.display = 'none';
-                document.getElementById('alertsView').style.display = 'block';
-                fetchAlerts();
             } else {
                 alert(viewName.toUpperCase() + " module is coming soon in the next update!");
             }
@@ -1404,12 +1317,12 @@
                         return `
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s; background: ${rowBg};" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='${rowBg}'">
                             <td style="padding: 0.75rem; color: ${ceColor}; font-weight: 600;">${ceMv}</td>
-                            <td style="padding: 0.75rem; color: #fff;">${(item.CE.openInterest || 0).toLocaleString()}</td>
+                            <td style="padding: 0.75rem; color: var(--text-primary); font-weight: 700; background: rgba(239, 68, 68, 0.02); border-left: 1px solid var(--border-color);">${(item.CE.openInterest || 0).toLocaleString()}</td>
                             <td style="padding: 0.75rem; color: var(--accent-success); font-family: monospace; font-weight: 700;">₹${item.CE.lastPrice || 0}</td>
                             <td style="padding: 0.75rem; font-weight: 800; background: rgba(255,255,255,0.03); color: var(--accent-primary);">${item.strikePrice}</td>
                             <td style="padding: 0.75rem; font-weight: 600; color: var(--text-secondary);">${item.expiry || 'N/A'}</td>
                             <td style="padding: 0.75rem; color: var(--accent-danger); font-family: monospace; font-weight: 700;">₹${item.PE.lastPrice || 0}</td>
-                            <td style="padding: 0.75rem; color: #fff;">${(item.PE.openInterest || 0).toLocaleString()}</td>
+                            <td style="padding: 0.75rem; color: var(--text-primary); font-weight: 700; background: rgba(16, 185, 129, 0.02); border-right: 1px solid var(--border-color);">${(item.PE.openInterest || 0).toLocaleString()}</td>
                             <td style="padding: 0.75rem; color: ${peColor}; font-weight: 600;">${peMv}</td>
                         </tr>
                     `}).join('');
@@ -1553,176 +1466,6 @@
         const savedTheme = localStorage.getItem('theme') || 'light';
         applyTheme(savedTheme);
 
-        // --- ALERTS LOGIC ---
-        function toggleAlertForm() {
-            const form = document.getElementById('alertForm');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
-            // Pre-fill ticker if on dashboard
-            if (form.style.display === 'block' && currentTicker) {
-                document.getElementById('alertTicker').value = currentTicker;
-            }
-        }
-
-        function updateAlertOptions() {
-            const type = document.getElementById('alertType').value;
-            const container = document.getElementById('alertValueContainer');
-            const label = document.getElementById('alertValueLabel');
-            const input = document.getElementById('alertValue');
-
-            if (type === 'SENTIMENT_FLIP' || type === 'RSI_OVERSOLD' || type === 'RSI_OVERBOUGHT') {
-                container.style.opacity = '0.5';
-                input.disabled = true;
-                label.textContent = 'Auto-calculated';
-            } else if (type === 'PCT_CHANGE') {
-                container.style.opacity = '1';
-                input.disabled = false;
-                label.textContent = 'Change % (e.g. 2)';
-            } else {
-                container.style.opacity = '1';
-                input.disabled = false;
-                label.textContent = 'Target Price';
-            }
-        }
-
-        async function saveAlert() {
-            const ticker = document.getElementById('alertTicker').value.trim().toUpperCase();
-            const type = document.getElementById('alertType').value;
-            const value = document.getElementById('alertValue').value;
-
-            if (!ticker) {
-                alert('Please enter a ticker');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/alerts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ticker, type, price: value })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    toggleAlertForm();
-                    fetchAlerts();
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch (e) {
-                console.error('Alert save error:', e);
-            }
-        }
-
-        let lastTriggerCount = 0;
-        const sentinelSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
-
-        async function fetchAlertHistory() {
-            const historyContainer = document.getElementById('alertHistory');
-            try {
-                const response = await fetch('/api/alerts/history');
-                const result = await response.json();
-
-                if (result.success && result.logs) {
-                    // Check if new triggers occurred
-                    if (result.logs.length > lastTriggerCount) {
-                        if (lastTriggerCount > 0) sentinelSound.play().catch(e => console.log("Audio play blocked"));
-                        lastTriggerCount = result.logs.length;
-                    }
-
-                    if (result.logs.length === 0) {
-                        historyContainer.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No triggers logged yet.</p>';
-                        return;
-                    }
-
-                    historyContainer.innerHTML = result.logs.map((log, index) => `
-                        <div class="mission-log-item" style="${index === 0 ? 'border-left-color: var(--accent-success); animation: pulse-border 2s infinite;' : ''}">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                                <strong style="color: var(--accent-primary);">${log.ticker}</strong>
-                                <span style="font-size: 0.7rem; opacity: 0.6;">${log.time}</span>
-                            </div>
-                            <div style="font-size: 0.8rem;">
-                                ${log.msg} at <span style="color: var(--accent-success);">₹${log.price}</span>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            } catch (e) {
-                console.error('History fetch error:', e);
-            }
-        }
-
-        async function fetchAlerts() {
-            const list = document.getElementById('activeAlertsList');
-            fetchAlertHistory(); // Refresh history too
-            try {
-                const response = await fetch('/api/alerts');
-                const result = await response.json();
-
-                if (result.success && result.alerts) {
-                    const activeAlerts = result.alerts.filter(a => a.active);
-                    if (activeAlerts.length === 0) {
-                        list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem; grid-column: 1/-1;">No active sentinels. Set one up to monitor the market.</p>';
-                        return;
-                    }
-
-                    list.innerHTML = activeAlerts.map(a => {
-                        let proximity = 0;
-                        if (a.current_price && a.price) {
-                            const current = parseFloat(a.current_price);
-                            const target = parseFloat(a.price);
-                            // Proximity logic: how close is current to target?
-                            // For PRICE_ABOVE, we want current/target * 100
-                            if (a.type === 'PRICE_ABOVE') proximity = Math.min((current / target) * 100, 100);
-                            else proximity = Math.min((target / current) * 100, 100);
-                        } else {
-                            proximity = Math.floor(Math.random() * 20) + 10; // Default low
-                        }
-
-                        return `
-                        <div class="glass-card" style="padding: 1rem; border-left: 4px solid var(--accent-primary);">
-                            <div style="display: flex; justify-content: space-between; align-items: start;">
-                                <div>
-                                    <h4 style="font-weight: 800; color: var(--accent-primary);">${a.ticker}</h4>
-                                    <p style="font-size: 0.75rem; color: var(--text-secondary);">${a.type.replace('_', ' ')}</p>
-                                </div>
-                                <button onclick="deleteAlert(${a.id})" style="background: none; border: none; color: var(--accent-danger); cursor: pointer;">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <div style="margin-top: 1rem;">
-                                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
-                                    <span>LTP: ₹${a.current_price || '...'}</span>
-                                    <span>Target: ₹${a.price}</span>
-                                </div>
-                                <div class="confidence-bar" style="height: 6px; margin: 0; background: rgba(255,255,255,0.05);">
-                                    <div class="confidence-fill" style="width: ${proximity}%; background: ${proximity > 90 ? 'var(--accent-success)' : 'var(--gradient-cyber)'}; transition: width 0.5s ease;"></div>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; font-size: 0.65rem; margin-top: 0.25rem; opacity: 0.6;">
-                                    <span>Distance</span>
-                                    <span>${proximity.toFixed(1)}% Bound</span>
-                                </div>
-                            </div>
-                        </div>
-                        `;
-                    }).join('');
-                }
-            } catch (e) {
-                console.error('Alert fetch error:', e);
-            }
-        }
-
-        async function deleteAlert(id) {
-            try {
-                const response = await fetch(`/api/alerts?id=${id}`, {
-                    method: 'DELETE'
-                });
-                const result = await response.json();
-                if (result.success) {
-                    fetchAlerts();
-                }
-            } catch (e) {
-                console.error('Alert delete error:', e);
-            }
-        }
 
         async function updateMarketStatus() {
             try {
@@ -1756,12 +1499,6 @@
         updateMarketStatus();
         setInterval(updateMarketStatus, 60000); // Update every 1 minute
 
-        // Auto-refresh alerts if on alerts page
-        setInterval(() => {
-            if (document.getElementById('alertsView').style.display === 'block') {
-                fetchAlerts();
-            }
-        }, 30000);
     </script>
 
 </body>

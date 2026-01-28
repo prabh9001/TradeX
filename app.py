@@ -537,8 +537,6 @@ def get_latest_price(ticker):
 
 # In-memory storage for user portfolios (email as key)
 user_portfolios = {}
-user_alerts = {}
-user_alert_logs = {}
 
 @app.route('/api/portfolio', methods=['GET', 'POST', 'DELETE'])
 def portfolio():
@@ -733,129 +731,6 @@ def backtest():
             'error': str(e)
         })
 
-@app.route('/api/alerts', methods=['GET', 'POST', 'DELETE'])
-def alerts():
-    """
-    Price alerts management
-    """
-    if 'user' not in session:
-        return jsonify({'success': False, 'error': 'Not logged in'})
-    
-    email = session['user']
-    if email not in user_alerts:
-        user_alerts[email] = []
-
-    if request.method == 'GET':
-        alerts_with_price = []
-        for a in user_alerts[email]:
-            current_price = None
-            if a['active']:
-                current_price = ai_engine.get_current_price(a['ticker'])
-            
-            alerts_with_price.append({**a, 'current_price': current_price})
-            
-        return jsonify({
-            'success': True,
-            'alerts': alerts_with_price
-        })
-    
-    elif request.method == 'POST':
-        data = request.json
-        ticker = data.get('ticker', '').upper().strip()
-        alert_type = data.get('type')
-        price = data.get('price')
-        
-        if not ticker or not alert_type:
-            return jsonify({'success': False, 'error': 'Ticker and Type are required'})
-            
-        new_alert = {
-            'id': int(datetime.datetime.now().timestamp() * 1000),
-            'ticker': ticker,
-            'type': alert_type,
-            'price': price,
-            'active': True,
-            'created_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-        
-        user_alerts[email].append(new_alert)
-        return jsonify({
-            'success': True,
-            'message': 'Sentinel activated successfully',
-            'alert': new_alert
-        })
-    elif request.method == 'DELETE':
-        alert_id = request.args.get('id')
-        if not alert_id:
-            return jsonify({'success': False, 'error': 'Alert ID is required'})
-            
-        initial_len = len(user_alerts[email])
-        user_alerts[email] = [a for a in user_alerts[email] if str(a['id']) != str(alert_id)]
-        
-        if len(user_alerts[email]) < initial_len:
-            return jsonify({'success': True, 'message': 'Sentinel deactivated'})
-        else:
-            return jsonify({'success': False, 'error': 'Sentinel not found'})
-
-@app.route('/api/alerts/history')
-def alert_history():
-    """Get triggered alert logs"""
-    if 'user' not in session:
-        return jsonify({'success': False, 'error': 'Not logged in'})
-    email = session['user']
-    return jsonify({
-        'success': True,
-        'logs': user_alert_logs.get(email, [])
-    })
-
-def monitor_alerts():
-    """Background thread to monitor prices and trigger alerts"""
-    print("  [SENTINEL] Alert Monitor Thread Started")
-    while True:
-        try:
-            # Check market status first
-            if ai_engine.get_market_status() == "OPEN":
-                for email, alerts in user_alerts.items():
-                    if not alerts: continue
-                    
-                    for alert in alerts:
-                        if not alert.get('active'): continue
-                        
-                        ticker = alert['ticker']
-                        current_price = ai_engine.get_current_price(ticker)
-                        
-                        if current_price:
-                            target_price = float(alert['price']) if alert['price'] else None
-                            trigger = False
-                            msg = ""
-                            
-                            if alert['type'] == 'PRICE_ABOVE' and target_price and current_price >= target_price:
-                                trigger = True
-                                msg = f"Target ₹{target_price} Hit"
-                            elif alert['type'] == 'PRICE_BELOW' and target_price and current_price <= target_price:
-                                trigger = True
-                                msg = f"Target ₹{target_price} Hit"
-                            
-                            if trigger:
-                                print(f"  [TRIGGER] Alert fired for {email}: {ticker} at {current_price}")
-                                # Log it
-                                if email not in user_alert_logs: user_alert_logs[email] = []
-                                user_alert_logs[email].insert(0, {
-                                    'ticker': ticker,
-                                    'msg': msg,
-                                    'price': current_price,
-                                    'time': datetime.datetime.now().strftime('%H:%M:%S')
-                                })
-                                # Deactivate alert after trigger
-                                alert['active'] = False
-            
-            time.sleep(15) # Watch every 15 seconds
-        except Exception as e:
-            print(f"  [!] Monitor Error: {e}")
-            time.sleep(30)
-
-# Start Sentinel Thread
-monitor_thread = threading.Thread(target=monitor_alerts, daemon=True)
-monitor_thread.start()
 
 @app.route('/api/market/status')
 def market_status():
