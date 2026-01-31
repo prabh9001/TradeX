@@ -738,7 +738,6 @@ class AdvancedAIEngine:
 
     def get_upstox_option_chain(self, instrument_key, target_expiry=None):
         """Fetches option chain data with Greeks from Upstox"""
-        log_file = os.path.join(os.getcwd(), "upstox_debug.log")
         
         # Helper to reload token if missing or invalid
         def reload_token():
@@ -759,19 +758,16 @@ class AdvancedAIEngine:
                 return float(val) if val is not None else 0.0
             except: 
                 return 0.0
-
         if not self.upstox_token:
             reload_token()
 
         # Proactive reload if the token looks stale or we want to ensure latest from .env
         reload_token()
 
-        with open(log_file, "a") as f:
-            f.write(f"\n--- {datetime.now()} | Fetching Greeks for: {instrument_key} ---\n")
-            f.write(f"  [DEBUG] Using Token: {self.upstox_token[:20]}...{self.upstox_token[-10:]}\n")
+        print(f"Fetching Greeks for: {instrument_key}")
             
         if not self.upstox_token:
-            with open(log_file, "a") as f: f.write("  [ERROR] No Upstox token found after reload attempt\n")
+            print("  [ERROR] No Upstox token found after reload attempt")
             return None
             
         try:
@@ -784,18 +780,17 @@ class AdvancedAIEngine:
             
             # Check for token error and try one more time if so
             if exp_data.get('status') == 'error' and any(e.get('error_code') == 'UDAPI100050' for e in exp_data.get('errors', [])):
-                with open(log_file, "a") as f: f.write("  [INFO] Detected Invalid Token error. Attempting dynamic reload...\n")
+                print("  [INFO] Detected Invalid Token error. Attempting dynamic reload...")
                 reload_token()
                 exp_resp = requests.get(expiry_url, headers=self.headers, params=params)
                 exp_data = exp_resp.json()
 
             if exp_data.get('status') != 'success':
-                with open(log_file, "a") as f:
-                    f.write(f"  [ERROR] Expiry API failed for {instrument_key}: {exp_data.get('errors')}\n")
+                print(f"  [ERROR] Expiry API failed for {instrument_key}: {exp_data.get('errors')}")
                 return None
                 
             if not exp_data.get('data'):
-                with open(log_file, "a") as f: f.write(f"  [ERROR] No contract data found for {instrument_key}\n")
+                print(f"  [ERROR] No contract data found for {instrument_key}")
                 return None
                 
             # Extract unique expiry dates and pick the nearest one that is today or in the future
@@ -804,7 +799,7 @@ class AdvancedAIEngine:
             future_expiries = [e for e in all_expiries if e >= today_str]
             
             if not future_expiries:
-                with open(log_file, "a") as f: f.write(f"  [ERROR] No current/future expiry dates found for {instrument_key}.\n")
+                print(f"  [ERROR] No current/future expiry dates found for {instrument_key}.")
                 if not all_expiries: return None
                 nearest_expiry = all_expiries[0]
                 future_expiries = [nearest_expiry]
@@ -812,7 +807,7 @@ class AdvancedAIEngine:
                 # If a specific expiry was requested, use it; otherwise use the nearest
                 nearest_expiry = target_expiry if (target_expiry and target_expiry in future_expiries) else future_expiries[0]
                 
-            with open(log_file, "a") as f: f.write(f"  [OK] Using Expiry: {nearest_expiry}\n")
+            print(f"  [OK] Using Expiry: {nearest_expiry}")
             
             # 2. Fetch the chain
             chain_url = f"{self.base_url}/option/chain"
@@ -827,7 +822,7 @@ class AdvancedAIEngine:
             if data.get('status') == 'success':
                 options = data['data']
                 if not options:
-                    with open(log_file, "a") as f: f.write("  [ERROR] Chain data 'data' field is empty\n")
+                    print("  [ERROR] Chain data 'data' field is empty")
                     return None
                     
                 total_pe_oi = 0
@@ -890,7 +885,7 @@ class AdvancedAIEngine:
                     })
 
                 pcr = total_pe_oi / total_ce_oi if total_ce_oi > 0 else 0
-                with open(log_file, "a") as f: f.write(f"  [SUCCESS] Returned {len(chain_summary)} strikes\n")
+                print(f"  [SUCCESS] Returned {len(chain_summary)} strikes")
                 
                 return {
                     'expiry': nearest_expiry,
@@ -902,10 +897,9 @@ class AdvancedAIEngine:
                     'items': chain_summary
                 }
             else:
-                with open(log_file, "a") as f:
-                    f.write(f"  [ERROR] Chain API failed for {instrument_key}: {data.get('errors')}\n")
+                print(f"  [ERROR] Chain API failed for {instrument_key}: {data.get('errors')}")
         except Exception as e:
-            with open(log_file, "a") as f: f.write(f"  [CRITICAL] Exception for {instrument_key}: {str(e)}\n")
+            print(f"  [CRITICAL] Exception for {instrument_key}: {str(e)}")
             
         return None
     
