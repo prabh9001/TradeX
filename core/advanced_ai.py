@@ -741,12 +741,15 @@ class AdvancedAIEngine:
         
         # Helper to reload token if missing or invalid
         def reload_token():
-            from dotenv import load_dotenv
-            import os
-            # Force clear the environment variable so load_dotenv can refresh it
-            os.environ.pop("UPSTOX_ACCESS_TOKEN", None)
-            load_dotenv()
-            self.upstox_token = os.getenv("UPSTOX_ACCESS_TOKEN")
+            # In production (Render), keys are in the OS environment.
+            # Only try loading from .env if the key isn't already there.
+            token = os.getenv("UPSTOX_ACCESS_TOKEN")
+            if not token:
+                from dotenv import load_dotenv
+                load_dotenv()
+                token = os.getenv("UPSTOX_ACCESS_TOKEN")
+            
+            self.upstox_token = token
             self.headers = {
                 'Authorization': f'Bearer {self.upstox_token}',
                 'Accept': 'application/json'
