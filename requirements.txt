@@ -3,8 +3,12 @@ Flask==3.0.0
 Werkzeug==3.0.1
 
 # Data Processing
-pandas==2.2.1
-numpy==1.26.4
+pandas==2.1.4
+numpy==1.26.2
+
+# Machine Learning
+scikit-learn==1.3.2
+tensorflow==2.16.0
 
 # Financial Data - NSELIB + UPSTOX
 nselib
@@ -12,10 +16,15 @@ nsepython
 upstox-python-sdk
 yfinance
 python-dotenv
+openpyxl
 
 # NLP & Sentiment
 textblob==0.17.1
 
+# Visualization
+plotly==5.18.0
+
 # Utilities
 python-dateutil==2.8.2
 requests==2.31.0
+pandas-ta
