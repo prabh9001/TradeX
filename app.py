@@ -8,8 +8,6 @@ import json
 import traceback
 import os
 import datetime
-import threading
-import time
 import logging
 from dotenv import load_dotenv
 
@@ -18,7 +16,6 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler("foursight.log"),
         logging.StreamHandler()
     ]
 )
@@ -652,85 +649,6 @@ def portfolio():
         'message': f'Successfully added/updated {ticker} in portfolio'
     })
 
-@app.route('/api/screener', methods=['POST'])
-def screener():
-    """
-    Stock screener endpoint
-    Filter stocks based on criteria
-    """
-    try:
-        criteria = request.json
-        
-        # Mock screener results
-        results = [
-            {
-                'ticker': 'AAPL',
-                'price': 180.50,
-                'change_pct': 2.5,
-                'volume': 50000000,
-                'market_cap': 2800000000000,
-                'pe_ratio': 28.5,
-                'signal': 'BUY'
-            },
-            {
-                'ticker': 'TCS.NS',
-                'price': 3500,
-                'change_pct': 1.2,
-                'volume': 2000000,
-                'market_cap': 1280000000000,
-                'pe_ratio': 32.1,
-                'signal': 'HOLD'
-            }
-        ]
-        
-        return jsonify({
-            'success': True,
-            'results': results
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        })
-
-@app.route('/api/backtest', methods=['POST'])
-def backtest():
-    """
-    Backtesting endpoint
-    Test trading strategy on historical data
-    """
-    try:
-        data = request.json
-        ticker = data.get('ticker')
-        strategy = data.get('strategy', 'buy_hold')
-        period = data.get('period', '1y')
-        
-        # Mock backtest results
-        return jsonify({
-            'success': True,
-            'backtest': {
-                'ticker': ticker,
-                'strategy': strategy,
-                'period': period,
-                'initial_capital': 10000,
-                'final_value': 12500,
-                'total_return': 25.0,
-                'sharpe_ratio': 1.5,
-                'max_drawdown': -8.5,
-                'win_rate': 65.0,
-                'total_trades': 45,
-                'winning_trades': 29,
-                'losing_trades': 16
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        })
-
 
 @app.route('/api/market/status')
 def market_status():
@@ -747,24 +665,6 @@ def market_status():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/api/market/movers', methods=['GET'])
-def market_movers():
-    """
-    Get top gainers and losers
-    """
-    return jsonify({
-        'success': True,
-        'gainers': [
-            {'ticker': 'NVDA', 'price': 450.50, 'change': 8.5},
-            {'ticker': 'AMD', 'price': 120.30, 'change': 6.2},
-            {'ticker': 'TSLA', 'price': 245.80, 'change': 5.1}
-        ],
-        'losers': [
-            {'ticker': 'META', 'price': 320.10, 'change': -4.2},
-            {'ticker': 'NFLX', 'price': 480.50, 'change': -3.8},
-            {'ticker': 'AMZN', 'price': 155.20, 'change': -2.9}
-        ]
-    })
 
 @app.route('/api/option-chain', methods=['GET'])
 def get_option_chain():

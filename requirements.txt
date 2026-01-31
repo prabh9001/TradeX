@@ -21,10 +21,6 @@ openpyxl
 # NLP & Sentiment
 textblob==0.17.1
 
-# Visualization
-plotly==5.18.0
-
 # Utilities
 python-dateutil==2.8.2
 requests==2.31.0
-pandas-ta
