@@ -1,4 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 from core.advanced_ai import AdvancedAIEngine
 import pandas as pd
 import numpy as np
@@ -35,6 +37,32 @@ ai_engine = AdvancedAIEngine()
 
 app.secret_key = os.environ.get('SECRET_KEY', 'premium_trading_secret_key_123')
 
+# Database Configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tradex.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# --- Database Models ---
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    portfolios = db.relationship('Portfolio', backref='owner', lazy=True)
+
+class Portfolio(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    ticker = db.Column(db.String(20), nullable=False)
+    quantity = db.Column(db.Float, nullable=False)
+    avg_price = db.Column(db.Float, nullable=False)
+    asset_type = db.Column(db.String(20), default='Holding') # 'Holding' or 'Position'
+    date_added = db.Column(db.DateTime, default=lambda: datetime.datetime.now())
+
+# Create database tables
+with app.app_context():
+    db.create_all()
+
 @app.route('/')
 def landing():
     """Landing page"""
@@ -55,12 +83,14 @@ def login():
         email = data.get('email')
         password = data.get('password')
         
-        # Simple mock authentication
-        if email and password:
+        user = User.query.filter_by(email=email).first()
+        
+        if user and check_password_hash(user.password, password):
             session['user'] = email
+            session['user_id'] = user.id
             return redirect(url_for('dashboard'))
         else:
-            flash('Invalid credentials')
+            flash('Invalid email or password')
             
     return render_template('login.html')
 
@@ -69,8 +99,24 @@ def register():
     """Registration page"""
     if request.method == 'POST':
         data = request.form
-        # Mock registration
-        session['user'] = data.get('email')
+        name = data.get('name')
+        email = data.get('email')
+        password = data.get('password')
+        
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered')
+            return render_template('register.html')
+            
+        new_user = User(
+            name=name,
+            email=email,
+            password=generate_password_hash(password, method='scrypt')
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        
+        session['user'] = email
+        session['user_id'] = new_user.id
         return redirect(url_for('dashboard'))
     return render_template('register.html')
 
@@ -532,31 +578,26 @@ def get_latest_price(ticker):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-# In-memory storage for user portfolios (email as key)
-user_portfolios = {}
-
 @app.route('/api/portfolio', methods=['GET', 'POST', 'DELETE'])
 def portfolio():
     """
-    Portfolio management endpoint
+    Portfolio management endpoint - Database Persistence
     """
-    if 'user' not in session:
+    if 'user' not in session or 'user_id' not in session:
         return jsonify({'success': False, 'error': 'Not logged in'})
     
-    email = session['user']
-    if email not in user_portfolios:
-        user_portfolios[email] = []
+    user_id = session['user_id']
 
     if request.method == 'GET':
         import yfinance as yf
-        holdings = user_portfolios[email]
+        holdings = Portfolio.query.filter_by(user_id=user_id).all()
         total_invested = 0
         total_current_value = 0
         
         enriched_holdings = []
         for h in holdings:
             try:
-                ticker = h['ticker']
+                ticker = h.ticker
                 # Add .BO if it looks like an Indian stock but has no suffix
                 yf_ticker = ticker
                 if not any(ticker.endswith(s) for s in ['.NS', '.BO']) and not ticker.startswith('^'):
@@ -565,8 +606,8 @@ def portfolio():
                 stock = yf.Ticker(yf_ticker)
                 curr_price = stock.fast_info.get('last_price') or stock.history(period='1d')['Close'].iloc[-1]
                 
-                invested = h['quantity'] * h['avg_price']
-                current_value = h['quantity'] * curr_price
+                invested = h.quantity * h.avg_price
+                current_value = h.quantity * curr_price
                 pnl = current_value - invested
                 pnl_pct = (pnl / invested * 100) if invested > 0 else 0
                 
@@ -574,15 +615,25 @@ def portfolio():
                 total_current_value += current_value
                 
                 enriched_holdings.append({
-                    **h,
+                    'ticker': h.ticker,
+                    'quantity': h.quantity,
+                    'avg_price': h.avg_price,
                     'current_price': round(curr_price, 2),
                     'pnl': round(pnl, 2),
                     'pnl_percent': round(pnl_pct, 2),
-                    'type': h.get('type', 'Holding')
+                    'type': h.asset_type
                 })
             except Exception as e:
-                print(f"Error enriching {h['ticker']}: {e}")
-                enriched_holdings.append({**h, 'current_price': h['avg_price'], 'pnl': 0, 'pnl_percent': 0})
+                print(f"Error enriching {h.ticker}: {e}")
+                enriched_holdings.append({
+                    'ticker': h.ticker,
+                    'quantity': h.quantity,
+                    'avg_price': h.avg_price,
+                    'current_price': h.avg_price, 
+                    'pnl': 0, 
+                    'pnl_percent': 0,
+                    'type': h.asset_type
+                })
 
         total_pnl = total_current_value - total_invested
         total_pnl_pct = (total_pnl / total_invested * 100) if total_invested > 0 else 0
@@ -606,10 +657,10 @@ def portfolio():
         if not ticker:
             return jsonify({'success': False, 'error': 'Ticker is required'})
             
-        initial_len = len(user_portfolios[email])
-        user_portfolios[email] = [h for h in user_portfolios[email] if not (h['ticker'] == ticker and h.get('type') == asset_type)]
-        
-        if len(user_portfolios[email]) < initial_len:
+        holding = Portfolio.query.filter_by(user_id=user_id, ticker=ticker, asset_type=asset_type).first()
+        if holding:
+            db.session.delete(holding)
+            db.session.commit()
             return jsonify({'success': True, 'message': f'Removed {ticker} from {asset_type}s'})
         else:
             return jsonify({'success': False, 'error': 'Stock not found in portfolio'})
@@ -625,24 +676,25 @@ def portfolio():
         return jsonify({'success': False, 'error': 'Invalid stock data'})
 
     # Find if exists with SAME type
-    found = False
-    for h in user_portfolios[email]:
-        if h['ticker'] == ticker and h.get('type') == asset_type:
-            # Update average price: (old_q * old_p + new_q * new_p) / (old_q + new_q)
-            new_total_q = h['quantity'] + quantity
-            new_avg_p = (h['quantity'] * h['avg_price'] + quantity * avg_price) / new_total_q
-            h['quantity'] = new_total_q
-            h['avg_price'] = round(new_avg_p, 2)
-            found = True
-            break
+    holding = Portfolio.query.filter_by(user_id=user_id, ticker=ticker, asset_type=asset_type).first()
     
-    if not found:
-        user_portfolios[email].append({
-            'ticker': ticker,
-            'quantity': quantity,
-            'avg_price': avg_price,
-            'type': asset_type
-        })
+    if holding:
+        # Update average price: (old_q * old_p + new_q * new_p) / (old_q + new_q)
+        new_total_q = holding.quantity + quantity
+        new_avg_p = (holding.quantity * holding.avg_price + quantity * avg_price) / new_total_q
+        holding.quantity = new_total_q
+        holding.avg_price = round(new_avg_p, 2)
+    else:
+        new_holding = Portfolio(
+            user_id=user_id,
+            ticker=ticker,
+            quantity=quantity,
+            avg_price=avg_price,
+            asset_type=asset_type
+        )
+        db.session.add(new_holding)
+    
+    db.session.commit()
 
     return jsonify({
         'success': True,
