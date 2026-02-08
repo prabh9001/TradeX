@@ -998,7 +998,7 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'service': 'Trade X',
-        'version': '2.0'
+        'version': '2.1'
     })
 
 @app.errorhandler(404)

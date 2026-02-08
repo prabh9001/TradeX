@@ -44,19 +44,29 @@ class AdvancedAIEngine:
         
         # Initialize Upstox Client
         self.upstox_token = os.getenv("UPSTOX_ACCESS_TOKEN")
-        self.upstox_config = upstox_client.Configuration()
-        self.upstox_config.access_token = self.upstox_token
-        self.upstox_api = upstox_client.HistoryApi(upstox_client.ApiClient(self.upstox_config))
+        self._init_upstox_clients()
         
         if self.upstox_token:
             print("Upstox Integration: Active in AdvancedAIEngine")
             
         self.base_url = "https://api.upstox.com/v2"
+        
+    def _init_upstox_clients(self):
+        """Initialize or re-initialize Upstox API clients with current token"""
+        if not self.upstox_token:
+            return
+            
+        self.upstox_config = upstox_client.Configuration()
+        self.upstox_config.access_token = self.upstox_token
+        self.upstox_client_instance = upstox_client.ApiClient(self.upstox_config)
+        self.upstox_api = upstox_client.HistoryApi(self.upstox_client_instance)
+        self.market_api = upstox_client.MarketQuoteApi(self.upstox_client_instance)
+        
         self.headers = {
             'Authorization': f'Bearer {self.upstox_token}',
             'Accept': 'application/json'
         }
-        
+
     def get_current_price(self, ticker):
         """
         Get the most recent price for a ticker efficiently.
@@ -68,11 +78,6 @@ class AdvancedAIEngine:
             # 1. Try Upstox (Best for real-time)
             if self.upstox_token:
                 try:
-                    import upstox_client
-                    config = upstox_client.Configuration()
-                    config.access_token = self.upstox_token
-                    market_api = upstox_client.MarketQuoteApi(upstox_client.ApiClient(config))
-                    
                     # Determine Instrument Key
                     is_index = any(idx in ticker for idx in ['NIFTY', 'BANK', 'SENSEX'])
                     if is_index:
@@ -80,7 +85,7 @@ class AdvancedAIEngine:
                     else:
                         symbol = f"NSE_EQ|{ticker}"
                     
-                    api_response = market_api.get_full_market_quote(symbol)
+                    api_response = self.market_api.get_full_market_quote(symbol)
                     if api_response.status == 'success' and symbol in api_response.data:
                         price = api_response.data[symbol].last_price
                         if price: return round(float(price), 2)
@@ -742,15 +747,14 @@ class AdvancedAIEngine:
         
         # Helper to reload token if missing or invalid
         def reload_token():
-            # Force reload from .env to pick up any changes while app is running
-            from dotenv import load_dotenv
-            load_dotenv(override=True)
+            # In production, we prioritize environment variables over .env files
+            # Only load .env if we are likely on a local machine
+            if not os.environ.get('RENDER'):
+                from dotenv import load_dotenv
+                load_dotenv()
             
             self.upstox_token = os.getenv("UPSTOX_ACCESS_TOKEN")
-            self.headers = {
-                'Authorization': f'Bearer {self.upstox_token}',
-                'Accept': 'application/json'
-            }
+            self._init_upstox_clients()
             return self.upstox_token
 
         def clean_num(val):
