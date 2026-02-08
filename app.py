@@ -1,3 +1,18 @@
+import sys
+# Python 3.13+ Compatibility: The 'cgi' module was removed in 3.13.
+# This shim provides common functionality needed by older libraries like nsepython/nselib.
+try:
+    import cgi
+except ImportError:
+    import html
+    from urllib import parse as urllib_parse
+    import types
+    cgi = types.ModuleType('cgi')
+    cgi.escape = html.escape
+    cgi.parse_qs = urllib_parse.parse_qs
+    cgi.parse_qsl = urllib_parse.parse_qsl
+    sys.modules['cgi'] = cgi
+
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
