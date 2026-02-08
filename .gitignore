@@ -42,6 +42,8 @@ upstox_debug.log
 .DS_Store
 Thumbs.db
 
-# Data files (optional, but good to ignore if they are giant/private)
-# Book1.xlsx
-# file.csv
+# Data files
+instance/
+*.db
+Book1.xlsx
+file.csv

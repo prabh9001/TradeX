@@ -27,7 +27,6 @@ load_dotenv()
 
 # Define the expected Excel/CSV file path for local data sync
 EXCEL_DATA_PATH = os.path.join(os.getcwd(), 'Book1.xlsx')
-CSV_DATA_PATH = os.path.join(os.getcwd(), 'Book1.xlsx')
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
@@ -38,7 +37,13 @@ ai_engine = AdvancedAIEngine()
 app.secret_key = os.environ.get('SECRET_KEY', 'premium_trading_secret_key_123')
 
 # Database Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tradex.db'
+# Use DATABASE_URL for production (PostgreSQL/Render/Heroku), fallback to local SQLite
+db_url = os.environ.get('DATABASE_URL')
+if db_url and db_url.startswith('postgres://'):
+    # Fix for SQLAlchemy 1.4+ which requires 'postgresql://' instead of 'postgres://'
+    db_url = db_url.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///tradex.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -891,13 +896,6 @@ def get_option_chain():
         print(f"Option Chain Error: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
-    except Exception as e:
-        print(f"Option Chain Error: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        })
-
 @app.route('/api/market/indices', methods=['GET'])
 def market_indices():
     """
@@ -984,7 +982,7 @@ def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'service': 'Foursight AI',
+        'service': 'Trade X',
         'version': '2.0'
     })
 

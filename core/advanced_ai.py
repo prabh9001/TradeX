@@ -15,6 +15,7 @@ from textblob import TextBlob
 from .news_handler import get_google_news
 import warnings
 import json
+import logging
 
 warnings.filterwarnings("ignore")
 
