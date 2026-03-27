@@ -1,6 +1,4 @@
 import sys
-# Python 3.13+ Compatibility: The 'cgi' module was removed in 3.13.
-# This shim provides common functionality needed by older libraries like nsepython/nselib.
 try:
     import cgi
 except ImportError:
@@ -38,7 +36,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Define the expected Excel/CSV file path for local data sync
 EXCEL_DATA_PATH = os.path.join(os.getcwd(), 'Book1.xlsx')
@@ -254,7 +252,11 @@ def run_backtest():
         
         # A. Try Upstox High-Fidelity Data first (Best for Indian Stocks)
         print(f"--- BACKTEST: [1/3] Upstox Attempt for {base_ticker} ---")
-        if not ai_engine.upstox_token:
+        
+        # Ensure latest token is loaded
+        upstox_token = ai_engine.reload_token()
+        
+        if not upstox_token:
             print("  [!] Upstox token missing, skipping step 1")
         else:
             try:
@@ -916,10 +918,11 @@ def market_indices():
     """
     Get major market indices using Upstox (Primary) or nselib (Fallback)
     """
-    upstox_token = os.getenv("UPSTOX_ACCESS_TOKEN")
-    results = []
-
     # 1. Try Upstox for high-quality real-time data
+    # Ensure latest token is loaded
+    upstox_token = ai_engine.reload_token()
+    results = []
+    
     if upstox_token:
         try:
             import upstox_client

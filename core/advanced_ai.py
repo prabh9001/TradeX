@@ -742,31 +742,30 @@ class AdvancedAIEngine:
             'var_95': round(var_95 * 100, 2)
         }
 
+    def reload_token(self):
+        """Reload token from .env and re-initialize clients"""
+        if not os.environ.get('RENDER'):
+            from dotenv import load_dotenv
+            load_dotenv(override=True)
+        
+        self.upstox_token = os.getenv("UPSTOX_ACCESS_TOKEN")
+        self._init_upstox_clients()
+        return self.upstox_token
+
     def get_upstox_option_chain(self, instrument_key, target_expiry=None):
         """Fetches option chain data with Greeks from Upstox"""
         
-        # Helper to reload token if missing or invalid
-        def reload_token():
-            # In production, we prioritize environment variables over .env files
-            # Only load .env if we are likely on a local machine
-            if not os.environ.get('RENDER'):
-                from dotenv import load_dotenv
-                load_dotenv()
-            
-            self.upstox_token = os.getenv("UPSTOX_ACCESS_TOKEN")
-            self._init_upstox_clients()
-            return self.upstox_token
-
         def clean_num(val):
             try:
                 return float(val) if val is not None else 0.0
             except: 
                 return 0.0
+
         if not self.upstox_token:
-            reload_token()
+            self.reload_token()
 
         # Proactive reload if the token looks stale or we want to ensure latest from .env
-        reload_token()
+        self.reload_token()
 
         print(f"Fetching Greeks for: {instrument_key}")
             
@@ -785,7 +784,7 @@ class AdvancedAIEngine:
             # Check for token error and try one more time if so
             if exp_data.get('status') == 'error' and any(e.get('error_code') == 'UDAPI100050' for e in exp_data.get('errors', [])):
                 print("  [INFO] Detected Invalid Token error. Attempting dynamic reload...")
-                reload_token()
+                self.reload_token()
                 exp_resp = requests.get(expiry_url, headers=self.headers, params=params)
                 exp_data = exp_resp.json()
 
@@ -909,6 +908,9 @@ class AdvancedAIEngine:
     
     def comprehensive_analysis(self, ticker, timeframe='1M'):
         """Main function for complete AI analysis - REAL DATA ONLY"""
+        # Ensure we have the latest token 
+        self.reload_token()
+        
         print(f"\n{'='*60}")
         print(f"TRADE X - ADVANCED ANALYSIS: {ticker} ({timeframe})")
         print(f"{'='*60}\n")
