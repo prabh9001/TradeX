@@ -18,7 +18,7 @@ from core.advanced_ai import AdvancedAIEngine
 import pandas as pd
 import numpy as np
 import yfinance as yf
-from nselib import capital_market
+# nselib is lazy-imported inside routes that need it (avoids NSE network calls at startup)
 import json
 import traceback
 import os
@@ -44,20 +44,40 @@ EXCEL_DATA_PATH = os.path.join(os.getcwd(), 'Book1.xlsx')
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 
-# Initialize AI Engine
-ai_engine = AdvancedAIEngine()
+# Initialize AI Engine (wrapped to prevent startup hang on Railway)
+try:
+    ai_engine = AdvancedAIEngine()
+    logger.info("AI Engine initialized successfully")
+except Exception as e:
+    logger.error(f"AI Engine failed to initialize: {e}")
+    ai_engine = None
 
 app.secret_key = os.environ.get('SECRET_KEY', 'premium_trading_secret_key_123')
 
 # Database Configuration
-# Use DATABASE_URL for production (PostgreSQL/Render/Heroku), fallback to local SQLite
-db_url = os.environ.get('DATABASE_URL')
-if db_url and db_url.startswith('postgres://'):
-    # Fix for SQLAlchemy 1.4+ which requires 'postgresql://' instead of 'postgres://'
+# Use DATABASE_URL for production (PostgreSQL on Railway), fallback to local SQLite
+db_url = os.environ.get('DATABASE_URL', '')
+
+# Railway sometimes prepends 'railway' to the URL (e.g. "railwaypostgresql://...")
+# Strip it if present
+if db_url.startswith('railway'):
+    db_url = db_url[len('railway'):]
+    logger.warning("Stripped 'railway' prefix from DATABASE_URL")
+
+# Fix for SQLAlchemy 1.4+ which requires 'postgresql://' instead of 'postgres://'
+if db_url.startswith('postgres://'):
     db_url = db_url.replace('postgres://', 'postgresql://', 1)
+
+# Log which DB we're using (mask password)
+if db_url:
+    safe_url = db_url.split('@')[-1] if '@' in db_url else db_url
+    logger.info(f"Using PostgreSQL database at: {safe_url}")
+else:
+    logger.info("DATABASE_URL not set — using local SQLite")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///tradex.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 
 # --- Database Models ---
@@ -77,9 +97,28 @@ class Portfolio(db.Model):
     asset_type = db.Column(db.String(20), default='Holding') # 'Holding' or 'Position'
     date_added = db.Column(db.DateTime, default=lambda: datetime.datetime.now())
 
-# Create database tables
-with app.app_context():
-    db.create_all()
+# Create database tables (with error handling for Railway cold starts)
+def init_db():
+    try:
+        with app.app_context():
+            db.create_all()
+            logger.info("Database tables created/verified")
+    except Exception as e:
+        logger.error(f"DB init failed at startup (will retry on first request): {e}")
+
+init_db()
+
+_db_initialized = False
+
+@app.before_request
+def ensure_db():
+    global _db_initialized
+    if not _db_initialized:
+        try:
+            db.create_all()
+            _db_initialized = True
+        except Exception as e:
+            logger.warning(f"DB not ready yet: {e}")
 
 @app.route('/')
 def landing():
