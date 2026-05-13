@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 import os
 import requests
-# nselib and nsepython are lazy-imported inside functions to avoid
-# blocking network calls at startup (causes Railway infinite loading)
+from nselib import capital_market
+from nsepython import *
 import yfinance as yf
 import upstox_client
 from upstox_client.rest import ApiException
@@ -341,7 +341,6 @@ class AdvancedAIEngine:
                     # Use nsepython for better index historical stability
                     try:
                         print(f"  Attempting nsepython index_history for: {clean_ticker}")
-                        from nsepython import index_history  # lazy import
                         data = index_history(clean_ticker, start_str, end_str)
                     except Exception as nse_e:
                         print(f"  [!] nsepython index failed: {nse_e}")
@@ -356,11 +355,7 @@ class AdvancedAIEngine:
                         except Exception as yf_e:
                             print(f"  [!] yfinance index failed: {yf_e}")
                             # Final resort fallback for indices
-                            try:
-                                from nselib import capital_market  # lazy import
-                                data = capital_market.index_data(clean_ticker, start_str, end_str)
-                            except Exception as cm_e:
-                                print(f"  [!] nselib index fallback failed: {cm_e}")
+                            data = capital_market.index_data(clean_ticker, start_str, end_str)
                     
                     column_mapping = {
                         'HistoricalDate': 'Date', 'OPEN': 'Open', 'HIGH': 'High', 'LOW': 'Low', 'CLOSE': 'Close', 'VOLUME': 'Volume',
@@ -369,7 +364,6 @@ class AdvancedAIEngine:
                     }
                 else:
                     # nselib's price_volume_and_deliverable_position_data for equities
-                    from nselib import capital_market  # lazy import
                     data = capital_market.price_volume_and_deliverable_position_data(clean_ticker, start_str, end_str)
                     column_mapping = {
                         'Date': 'Date', 'OpenPrice': 'Open', 'HighPrice': 'High', 'LowPrice': 'Low', 'ClosePrice': 'Close', 'TotalTradedQuantity': 'Volume'
